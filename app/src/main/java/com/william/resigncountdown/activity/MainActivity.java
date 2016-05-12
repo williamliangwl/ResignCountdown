@@ -1,16 +1,16 @@
 package com.william.resigncountdown.activity;
 
-import android.Manifest;
-import android.content.ComponentName;
-import android.content.pm.PackageManager;
-import android.support.v7.app.AppCompatActivity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 
 import com.william.resigncountdown.R;
 import com.william.resigncountdown.helper.DateHelper;
 import com.william.resigncountdown.model.DateDiff;
-import com.william.resigncountdown.service.BootReceiver;
+import com.william.resigncountdown.service.NotificationService;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -31,14 +31,26 @@ public class MainActivity extends AppCompatActivity {
         minuteText = (TextView) findViewById(R.id.minuteText);
         secondText = (TextView) findViewById(R.id.secondText);
 
-        setResignDate();
-
-        setBootReceiver();
+        resignDate = getResignDate();
 
         th.start();
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        Intent myIntent = new Intent(MainActivity.this, NotificationService.class);
+        PendingIntent  pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, myIntent, 0);
+        Calendar calendar = Calendar.getInstance();
+        calendar.getTimeInMillis();
+        Calendar calendar1 = (Calendar) calendar.clone();
+        calendar1.set(Calendar.HOUR, 9);
+        calendar1.set(Calendar.MINUTE, 0);
+        calendar1.set(Calendar.SECOND, 0);
+        if(calendar.getTimeInMillis() > calendar1.getTimeInMillis()){
+            calendar1.set(Calendar.DATE, calendar.get(Calendar.DATE)+1);
+        }
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, calendar1.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
     }
 
-    private void setResignDate () {
+    public static Date getResignDate() {
         Calendar calendar = Calendar.getInstance();
         if (calendar.get(Calendar.MONTH) > 7 && calendar.get(Calendar.DATE) != 31) {
             calendar.add(Calendar.YEAR, 1);
@@ -53,13 +65,7 @@ public class MainActivity extends AppCompatActivity {
             calendar.set(Calendar.DATE, 31);
         }
         calendar.set(Calendar.HOUR_OF_DAY, 17);
-        resignDate = calendar.getTime();
-    }
-
-    private void setBootReceiver() {
-        ComponentName receiver = new ComponentName(this, BootReceiver.class);
-        PackageManager pm = this.getPackageManager();
-        pm.setComponentEnabledSetting(receiver, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
+        return calendar.getTime();
     }
 
     Thread th = new Thread(new Runnable() {
